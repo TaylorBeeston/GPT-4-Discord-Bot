@@ -1,0 +1,48 @@
+# serverless.yml
+
+service: discord-gpt-4-bot
+
+frameworkVersion: '3'
+
+useDotenv: true
+
+plugins:
+    - serverless-esbuild
+    - serverless-offline
+
+custom:
+    esbuild:
+        packager: pnpm
+        plugins: esbuildWasmPlugin.cjs
+        watch:
+            pattern: ['src/**/*.ts', 'dids.ts']
+
+provider:
+    name: aws
+    runtime: nodejs16.x
+    timeout: 30
+    stage: ${opt:stage, "dev"}
+    region: ${opt:region, "us-west-2"}
+    environment:
+        LAMBDA_STAGE: ${opt:stage, "dev"}
+    tracing:
+        apiGateway: true
+        lambda: true
+    httpApi:
+        cors:
+            allowedOrigins: '*'
+            allowedHeaders: '*'
+            allowedMethods: '*'
+
+functions:
+    discord:
+        handler: lambda.discordHandler
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - httpApi: ANY /{params+}
+        url:
+            cors: true
