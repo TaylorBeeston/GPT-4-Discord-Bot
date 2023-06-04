@@ -20,11 +20,18 @@ custom:
 provider:
     name: aws
     runtime: nodejs16.x
-    timeout: 30
+    timeout: 900
     stage: ${opt:stage, "dev"}
     region: ${opt:region, "us-west-2"}
     environment:
         LAMBDA_STAGE: ${opt:stage, "dev"}
+        DISCORD_TOKEN: ${env:DISCORD_TOKEN}
+        DISCORD_APPLICATION_KEY: ${env:DISCORD_APPLICATION_KEY}
+        APPLICATION_ID: ${env:APPLICATION_ID}
+        GUILD_ID: ${env:GUILD_ID}
+        CHANNEL_ID: ${env:CHANNEL_ID}
+        OPENAI_API_TOKEN: ${env:OPENAI_API_TOKEN}
+      
     tracing:
         apiGateway: true
         lambda: true
@@ -37,11 +44,6 @@ provider:
 functions:
     discord:
         handler: lambda.discordHandler
-        vpc:
-            securityGroupIds:
-                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
-            subnetIds:
-                - Ref: PrivateSubnetA
         events:
             - httpApi: ANY /{params+}
         url:
