@@ -102,9 +102,23 @@ app.post("/interactions", async (req, res) => {
             if (!isPrivate) {
                 const content = `${member?.user?.username} asked ${message}\n\n${gpt4Response}`;
 
-                await rest.post(Routes.channelMessages(channelId), {
-                    body: { content },
-                });
+                if (content.length > 2000) {
+                    const chunks = content.match(/.{1,1975}/g) as string[];
+
+                    for (let chunkIndex in chunks) {
+                        const chunk = chunks[chunkIndex];
+
+                        await rest.post(Routes.channelMessages(channelId), {
+                            body: {
+                                content: `${chunk}\n(${chunkIndex + 1} / ${chunks.length})`,
+                            },
+                        });
+                    }
+                } else {
+                    await rest.post(Routes.channelMessages(channelId), {
+                        body: { content },
+                    });
+                }
             }
 
             return res.json({
