@@ -103,7 +103,7 @@ app.post("/interactions", async (req, res) => {
                 const content = `${member?.user?.username} asked ${message}\n\n${gpt4Response}`;
 
                 if (content.length > 2000) {
-                    const chunks = content.match(/.{1,1975}/g) as string[];
+                    const chunks = Array.from(content.match(/[\s\S]{1,1975}/g) ?? []);
 
                     for (let chunkIndex in chunks) {
                         const chunk = chunks[chunkIndex];
