@@ -95,28 +95,38 @@ app.post("/interactions", async (req, res) => {
 
             console.log({ message });
 
+            if (!isPrivate) {
+                const content = `<@${member?.user?.id}> prompted ${message}`;
+
+                const res = await rest.post(Routes.channelMessages(channelId), {
+                    body: { content },
+                });
+                console.log({ res });
+            }
+
             const gpt4Response = await callGPT4(message);
 
             console.log({ gpt4Response });
 
             if (!isPrivate) {
-                const content = `${member?.user?.username} asked ${message}\n\n${gpt4Response}`;
-
-                if (content.length > 2000) {
-                    const chunks = Array.from(content.match(/[\s\S]{1,1975}/g) ?? []);
+                if (gpt4Response.length > 2000) {
+                    const chunks = Array.from(
+                        gpt4Response.match(/[\s\S]{1,1975}/g) ?? []
+                    );
 
                     for (let chunkIndex in chunks) {
                         const chunk = chunks[chunkIndex];
 
                         await rest.post(Routes.channelMessages(channelId), {
                             body: {
-                                content: `${chunk}\n(${chunkIndex + 1} / ${chunks.length})`,
+                                content: `${chunk}\n(${Number(chunkIndex) + 1} / ${chunks.length
+                                    })`,
                             },
                         });
                     }
                 } else {
                     await rest.post(Routes.channelMessages(channelId), {
-                        body: { content },
+                        body: { content: gpt4Response },
                     });
                 }
             }
