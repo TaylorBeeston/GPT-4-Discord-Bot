@@ -31,7 +31,7 @@ provider:
         GUILD_ID: ${env:GUILD_ID}
         CHANNEL_ID: ${env:CHANNEL_ID}
         OPENAI_API_TOKEN: ${env:OPENAI_API_TOKEN}
-      
+
     tracing:
         apiGateway: true
         lambda: true
