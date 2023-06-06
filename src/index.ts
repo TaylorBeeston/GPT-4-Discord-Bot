@@ -1,15 +1,16 @@
+import crypto from "crypto";
+
 import express, { json } from "express";
-import {
-    InteractionResponseType,
-    InteractionType,
-    verifyKeyMiddleware,
-} from "discord-interactions";
+import fetch from "node-fetch";
+import { verifyKeyMiddleware } from "discord-interactions";
 import { REST } from "@discordjs/rest";
 import {
-    Routes,
-    APIApplicationCommandOption,
+    API,
+    RESTPutAPIApplicationCommandsJSONBody,
     ApplicationCommandOptionType,
-} from "discord-api-types/v10";
+    InteractionType,
+    InteractionResponseType,
+} from "@discordjs/core";
 import { OpenAIApi, Configuration } from "openai";
 
 const discordToken = process.env.DISCORD_TOKEN;
@@ -28,7 +29,7 @@ if (!openAiToken) throw new Error("OpenAI Token not set!");
 
 const openAi = new OpenAIApi(new Configuration({ apiKey: openAiToken }));
 
-const commands: APIApplicationCommandOption[] = [
+const commands: RESTPutAPIApplicationCommandsJSONBody = [
     {
         name: "chat",
         description: "You tryna chat with a bot?",
@@ -50,14 +51,17 @@ const commands: APIApplicationCommandOption[] = [
 ];
 
 const rest = new REST({ version: "10" }).setToken(discordToken);
+const api = new API(rest);
 
 (async () => {
     try {
         console.log("Started refreshing application (/) commands.");
 
-        await rest.put(Routes.applicationGuildCommands(applicationId, guildId), {
-            body: commands,
-        });
+        await api.applicationCommands.bulkOverwriteGuildCommands(
+            applicationId,
+            guildId,
+            commands
+        );
 
         console.log("Successfully reloaded application (/) commands.");
     } catch (error) {
@@ -74,66 +78,135 @@ async function callGPT4(message: string): Promise<string> {
     return response.data.choices[0]?.message?.content ?? "";
 }
 
+async function sendMessage(
+    message: string,
+    channelId: string,
+    memberId: string,
+    isPrivate = false,
+    messageId?: string
+): Promise<string> {
+    if (!isPrivate) {
+        const messageObject = await api.channels.createMessage(channelId, {
+            content: message,
+            ...(messageId ? { message_reference: { message_id: messageId } } : {}),
+        });
+
+        return messageObject.id;
+    }
+
+    const dm = await api.users.createDM(memberId);
+    const messageObject = await api.channels.createMessage(dm.id, {
+        content: message,
+        ...(messageId ? { message_reference: { message_id: messageId } } : {}),
+    });
+
+    return messageObject.id;
+}
+
+async function sendResponse(
+    message: string,
+    channelId: string,
+    memberId: string,
+    isPrivate = false
+): Promise<string> {
+    let id = "";
+
+    const content = `<@${memberId}>\n > ${message}`;
+
+    id = await sendMessage(
+        isPrivate ? `> ${message}` : content,
+        channelId,
+        memberId,
+        isPrivate
+    );
+
+    const gpt4Response = await callGPT4(message);
+
+    console.log({ gpt4Response });
+
+    if (gpt4Response.length > 2000) {
+        const chunks = Array.from(gpt4Response.match(/[\s\S]{1,1975}/g) ?? []);
+
+        for (let chunkIndex in chunks) {
+            const chunk = chunks[chunkIndex];
+
+            console.log({ id });
+
+            id = await sendMessage(
+                `${chunk}\n(${Number(chunkIndex) + 1}/${chunks.length})`,
+                channelId,
+                memberId,
+                isPrivate,
+                id
+            );
+        }
+    } else {
+        await sendMessage(gpt4Response, channelId, memberId, isPrivate, id);
+    }
+
+    return gpt4Response;
+}
+
 // Set up the Express server for handling interactions
 const app = express();
 
-app.use(verifyKeyMiddleware(discordKey));
+app.get("/health-check", async (req, res) => {
+    console.log("health", (req as any).requestContext);
 
-app.post("/interactions", async (req, res) => {
-    const { type, data, member } = req.body;
+    return res.sendStatus(200);
+});
 
-    console.log("Got a request!", { type, data, member: JSON.stringify(member) });
+app.post("/generate", json(), async (req, res) => {
+    console.log("Generating...", req.body);
 
-    if (type === InteractionType.PING) {
-        return res.json({ type: InteractionResponseType.PONG });
+    const { message, channelId, userId, token, isPrivate } = req.body;
+
+    if (token !== discordKey) return res.sendStatus(401);
+
+    await sendResponse(message, channelId, userId, isPrivate);
+
+    return res.sendStatus(200);
+});
+
+app.post("/interactions", verifyKeyMiddleware(discordKey), async (req, res) => {
+    const { type, data, member, token } = req.body;
+
+    console.log("Got a request!", {
+        type,
+        data,
+        member: JSON.stringify(member),
+        token,
+    });
+
+    if (type === InteractionType.Ping) {
+        return res.json({ type: InteractionResponseType.Pong });
     }
 
-    if (type === InteractionType.APPLICATION_COMMAND) {
+    if (type === InteractionType.ApplicationCommand) {
         if (data.name === "chat") {
+            const domainName: string = (req as any).requestContext.domainName;
             const message = req.body.data.options[0].value;
             const isPrivate = req.body.data.options[1]?.value;
 
             console.log({ message });
 
-            if (!isPrivate) {
-                const content = `<@${member?.user?.id}> prompted ${message}`;
+            fetch(`https://${domainName}/generate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    isPrivate,
+                    token: discordKey,
+                    message,
+                    channelId,
+                    userId: member?.user?.id,
+                }),
+            });
 
-                const res = await rest.post(Routes.channelMessages(channelId), {
-                    body: { content },
-                });
-                console.log({ res });
-            }
-
-            const gpt4Response = await callGPT4(message);
-
-            console.log({ gpt4Response });
-
-            if (!isPrivate) {
-                if (gpt4Response.length > 2000) {
-                    const chunks = Array.from(
-                        gpt4Response.match(/[\s\S]{1,1975}/g) ?? []
-                    );
-
-                    for (let chunkIndex in chunks) {
-                        const chunk = chunks[chunkIndex];
-
-                        await rest.post(Routes.channelMessages(channelId), {
-                            body: {
-                                content: `${chunk}\n(${Number(chunkIndex) + 1} / ${chunks.length
-                                    })`,
-                            },
-                        });
-                    }
-                } else {
-                    await rest.post(Routes.channelMessages(channelId), {
-                        body: { content: gpt4Response },
-                    });
-                }
-            }
+            await new Promise((res) => setTimeout(res, 100));
 
             return res.json({
-                type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-                data: { content: gpt4Response },
+                type: InteractionResponseType.ChannelMessageWithSource,
+                data: { content: "Generating a response..." },
             });
         }
     }
