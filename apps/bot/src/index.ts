@@ -1,7 +1,7 @@
 import { REST } from '@discordjs/rest';
-import { Client, GatewayIntentBits, Events, userMention, Partials } from 'discord.js';
+import { Client, GatewayIntentBits, Events, userMention, Partials, Message } from 'discord.js';
 import { API } from '@discordjs/core';
-import { OpenAIApi, Configuration } from 'openai';
+import { OpenAIApi, Configuration, ChatCompletionRequestMessage } from 'openai';
 import { config } from 'dotenv';
 
 config();
@@ -36,11 +36,41 @@ const client = new Client({
 
 const api = new API(rest);
 
-async function callGPT4(message: string): Promise<string> {
-    const response = await openAi.createChatCompletion({
-        model: 'gpt-4',
-        messages: [{ role: 'user', content: message }],
-    });
+function cleanMessageContent(content: string): string {
+    return content.replace(userMention(client.user!.id), '').trim();
+}
+
+async function getMessageHistory(
+    _message: Message<boolean>
+): Promise<ChatCompletionRequestMessage[]> {
+    const messages: ChatCompletionRequestMessage[] = [
+        {
+            role: 'user',
+            content: cleanMessageContent(_message.content),
+        },
+    ];
+
+    let isReply = Boolean(_message.reference);
+    let message = _message;
+
+    while (isReply) {
+        message = await message.fetchReference();
+
+        messages.unshift({
+            role: message.author.id === client.user!.id ? 'assistant' : 'user',
+            content: cleanMessageContent(message.content),
+        });
+
+        isReply = Boolean(message.reference);
+    }
+
+    console.log(messages);
+
+    return messages;
+}
+
+async function callGPT4(messages: ChatCompletionRequestMessage[]): Promise<string> {
+    const response = await openAi.createChatCompletion({ model: 'gpt-4', messages });
 
     return response.data.choices[0]?.message?.content ?? '';
 }
@@ -62,13 +92,11 @@ client.login(discordToken);
 
 client.on(Events.MessageCreate, async message => {
     if (message.mentions.has(client.user!.id) && message.author.id !== client.user!.id) {
-        const content = message.content.replace(userMention(client.user!.id), '').trim();
-
         let id = message.id;
 
         const placeholderId = await sendMessage('Generating response...', message.channelId, id);
 
-        const gpt4Response = await callGPT4(content);
+        const gpt4Response = await callGPT4(await getMessageHistory(message));
 
         await api.channels.deleteMessage(message.channelId, placeholderId);
 
@@ -79,8 +107,6 @@ client.on(Events.MessageCreate, async message => {
 
             for (let chunkIndex in chunks) {
                 const chunk = chunks[chunkIndex];
-
-                console.log({ id });
 
                 id = await sendMessage(
                     `${chunk}\n(${Number(chunkIndex) + 1}/${chunks.length})`,
