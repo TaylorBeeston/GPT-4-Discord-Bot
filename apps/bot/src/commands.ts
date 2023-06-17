@@ -1,0 +1,35 @@
+import {
+    RESTPutAPIApplicationCommandsJSONBody,
+    ApplicationCommandOptionType,
+} from '@discordjs/core';
+
+export const commands: RESTPutAPIApplicationCommandsJSONBody = [
+    {
+        name: 'set-persona',
+        description: "Set the Bot's persona",
+        options: [
+            {
+                name: 'name',
+                type: ApplicationCommandOptionType.String,
+                description: 'The name of the persona',
+                required: true,
+            },
+            {
+                name: 'description',
+                type: ApplicationCommandOptionType.String,
+                description: 'Description for the persona',
+                required: true,
+            },
+            {
+                name: 'prompt',
+                type: ApplicationCommandOptionType.String,
+                description: 'Prompt for the persona',
+                required: true,
+            },
+        ],
+    },
+    {
+        name: 'get-persona',
+        description: "Get the Bot's persona",
+    },
+];

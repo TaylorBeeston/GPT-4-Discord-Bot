@@ -1,125 +1,101 @@
-import { REST } from '@discordjs/rest';
-import { Client, GatewayIntentBits, Events, userMention, Partials, Message } from 'discord.js';
-import { API } from '@discordjs/core';
-import { OpenAIApi, Configuration, ChatCompletionRequestMessage } from 'openai';
-import { config } from 'dotenv';
+import { Events, InteractionType } from 'discord.js';
 
-config();
+import { DEFAULT_PERSONA, channelId } from './constants';
 
-const discordToken = process.env.DISCORD_TOKEN;
-const discordKey = process.env.DISCORD_APPLICATION_KEY;
-const applicationId = process.env.APPLICATION_ID;
-const guildId = process.env.GUILD_ID;
-const _channelId = process.env.CHANNEL_ID;
-const openAiToken = process.env.OPENAI_API_TOKEN;
+import { addSystemPrompt, callGPT4 } from './openai';
+import { client, api, getMessageHistory, sendMessage } from './discord';
+import { applicationId, guildId, discordToken } from './constants';
+import { commands } from './commands';
+import { keyv } from './storage';
+import { setPersona } from './persona';
 
-if (!discordToken) throw new Error('Discord Token not set!');
-if (!discordKey) throw new Error('Discord Application Key not set!');
-if (!applicationId) throw new Error('Application ID not set!');
-if (!guildId) throw new Error('Guild ID not set!');
-if (!_channelId) throw new Error('Channel ID not set!');
-if (!openAiToken) throw new Error('OpenAI Token not set!');
-
-const openAi = new OpenAIApi(new Configuration({ apiKey: openAiToken }));
-
-const rest = new REST({ version: '10' }).setToken(discordToken);
-
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.DirectMessages,
-    ],
-    partials: [Partials.Message, Partials.Channel],
-});
-
-const api = new API(rest);
-
-function cleanMessageContent(content: string): string {
-    return content.replace(userMention(client.user!.id), '').trim();
-}
-
-async function getMessageHistory(
-    _message: Message<boolean>
-): Promise<ChatCompletionRequestMessage[]> {
-    const messages: ChatCompletionRequestMessage[] = [
-        {
-            role: 'user',
-            content: cleanMessageContent(_message.content),
-        },
-    ];
-
-    let isReply = Boolean(_message.reference);
-    let message = _message;
-
-    while (isReply) {
-        message = await message.fetchReference();
-
-        messages.unshift({
-            role: message.author.id === client.user!.id ? 'assistant' : 'user',
-            content: cleanMessageContent(message.content),
-        });
-
-        isReply = Boolean(message.reference);
-    }
-
-    console.log(messages);
-
-    return messages;
-}
-
-async function callGPT4(messages: ChatCompletionRequestMessage[]): Promise<string> {
-    const response = await openAi.createChatCompletion({ model: 'gpt-4', messages });
-
-    return response.data.choices[0]?.message?.content ?? '';
-}
-
-async function sendMessage(
-    message: string,
-    channelId: string,
-    messageId?: string
-): Promise<string> {
-    const messageObject = await api.channels.createMessage(channelId, {
-        content: message,
-        ...(messageId ? { message_reference: { message_id: messageId } } : {}),
-    });
-
-    return messageObject.id;
-}
+let currentPersona = DEFAULT_PERSONA;
 
 client.login(discordToken);
 
 client.on(Events.MessageCreate, async message => {
-    if (message.mentions.has(client.user!.id) && message.author.id !== client.user!.id) {
-        let id = message.id;
+    if (!message.mentions.has(client.user!.id) || message.author.bot) return;
 
-        const placeholderId = await sendMessage('Generating response...', message.channelId, id);
+    let id = message.id;
 
-        const gpt4Response = await callGPT4(await getMessageHistory(message));
+    const placeholderId = await sendMessage('Generating response...', message.channelId, id);
 
-        await api.channels.deleteMessage(message.channelId, placeholderId);
+    const messages = await addSystemPrompt(await getMessageHistory(message));
 
-        console.log({ gpt4Response });
+    console.log({ messages });
 
-        if (gpt4Response.length > 2000) {
-            const chunks = Array.from(gpt4Response.match(/[\s\S]{1,1975}/g) ?? []);
+    const gpt4Response = await callGPT4(messages);
 
-            for (let chunkIndex in chunks) {
-                const chunk = chunks[chunkIndex];
+    await api.channels.deleteMessage(message.channelId, placeholderId);
 
-                id = await sendMessage(
-                    `${chunk}\n(${Number(chunkIndex) + 1}/${chunks.length})`,
-                    message.channelId,
-                    id
-                );
-            }
-        } else {
-            await sendMessage(gpt4Response, message.channelId, id);
+    console.log({ gpt4Response });
+
+    if (gpt4Response.length > 2000) {
+        const chunks = Array.from(gpt4Response.match(/[\s\S]{1,1975}/g) ?? []);
+
+        for (let chunkIndex in chunks) {
+            const chunk = chunks[chunkIndex];
+
+            id = await sendMessage(
+                `${chunk}\n(${Number(chunkIndex) + 1}/${chunks.length})`,
+                message.channelId,
+                id
+            );
         }
+    } else {
+        await sendMessage(gpt4Response, message.channelId, id);
     }
 });
 
 client.on(Events.ClientReady, async c => {
-    console.log(`Ready! Logged in as ${c.user.tag}`);
+    try {
+        console.log(`Ready! Logged in as ${c.user.tag}`);
+        console.log('Started refreshing application (/) commands.');
+
+        await api.applicationCommands.bulkOverwriteGuildCommands(applicationId, guildId, commands);
+
+        console.log('Successfully reloaded application (/) commands.');
+
+        keyv.get('currentPersona').then(async persona => {
+            console.log({ persona });
+
+            await setPersona(persona || DEFAULT_PERSONA);
+        });
+    } catch (error) {
+        console.error(error);
+    }
+});
+
+client.on(Events.InteractionCreate, async interaction => {
+    if (interaction.type === InteractionType.ApplicationCommand) {
+        if (interaction.commandName === 'set-persona') {
+            const [nameOption, descriptionOption, promptOption] = interaction.options.data;
+            const name = nameOption?.value;
+            const description = descriptionOption?.value;
+            const prompt = promptOption?.value;
+
+            if (name && description && prompt) {
+                const persona = { name, description, systemPrompt: prompt };
+
+                await keyv.set(name.toString(), persona);
+
+                await keyv.set('currentPersona', persona);
+
+                currentPersona = persona as any;
+
+                await sendMessage(
+                    `Updating persona to ${name}.\nDescription: ${description}\nPrompt: ${prompt}`,
+                    channelId
+                );
+
+                await interaction.reply('Updated persona!');
+            }
+        }
+
+        if (interaction.commandName === 'get-persona') {
+            await interaction.reply(
+                `Name: ${currentPersona.name}\nDescription: ${currentPersona.description}\nPrompt: ${currentPersona.systemPrompt}`
+            );
+        }
+    }
 });

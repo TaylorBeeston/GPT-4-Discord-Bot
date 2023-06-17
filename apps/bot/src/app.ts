@@ -11,26 +11,9 @@ import {
     GatewayDispatchEvents,
 } from '@discordjs/core';
 import { WebSocketManager } from '@discordjs/ws';
-import { OpenAIApi, Configuration } from 'openai';
-import { config } from 'dotenv';
 
-config();
-
-const discordToken = process.env.DISCORD_TOKEN;
-const discordKey = process.env.DISCORD_APPLICATION_KEY;
-const applicationId = process.env.APPLICATION_ID;
-const guildId = process.env.GUILD_ID;
-const _channelId = process.env.CHANNEL_ID;
-const openAiToken = process.env.OPENAI_API_TOKEN;
-
-if (!discordToken) throw new Error('Discord Token not set!');
-if (!discordKey) throw new Error('Discord Application Key not set!');
-if (!applicationId) throw new Error('Application ID not set!');
-if (!guildId) throw new Error('Guild ID not set!');
-if (!_channelId) throw new Error('Channel ID not set!');
-if (!openAiToken) throw new Error('OpenAI Token not set!');
-
-const openAi = new OpenAIApi(new Configuration({ apiKey: openAiToken }));
+import { openAi } from './openai';
+import { discordToken, discordKey, channelId as _channelId, openAiToken } from './constants';
 
 const rest = new REST({ version: '10' }).setToken(discordToken);
 const gateway = new WebSocketManager({

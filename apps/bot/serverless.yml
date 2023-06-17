@@ -31,6 +31,7 @@ provider:
         GUILD_ID: ${env:GUILD_ID}
         CHANNEL_ID: ${env:CHANNEL_ID}
         OPENAI_API_TOKEN: ${env:OPENAI_API_TOKEN}
+        KEYV_URL: ${env:KEYV_URL}
 
     tracing:
         apiGateway: true
