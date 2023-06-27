@@ -106,11 +106,11 @@ client.on(Events.InteractionCreate, async interaction => {
         if (interaction.commandName === 'select-persona') {
             const personas: Persona[] = JSON.parse((await keyv.get('personas')) ?? '[]');
 
-            const options = personas.map(persona => {
+            const options = personas.map((persona, index) => {
                 return new StringSelectMenuOptionBuilder()
                     .setLabel(persona.name)
                     .setDescription(persona.description ?? 'No description set')
-                    .setValue(JSON.stringify(persona));
+                    .setValue(index.toString());
             });
 
             const select = new StringSelectMenuBuilder()
@@ -133,13 +133,13 @@ client.on(Events.InteractionCreate, async interaction => {
 
             if (selectionResponse.isStringSelectMenu()) {
                 const { values } = selectionResponse;
-                const value = values[0];
+                const value = Number(values[0]);
 
                 console.log({ values });
 
-                if (value) {
+                if (!Number.isNaN(value) && personas[value]) {
                     await Promise.all([
-                        setPersona(JSON.parse(value)),
+                        setPersona(personas[value]!),
                         interaction.editReply({ content: 'Updated persona!', components: [] }),
                     ]);
                 }
