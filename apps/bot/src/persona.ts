@@ -1,10 +1,42 @@
-import { client } from './discord';
+import { api, client, sendMessage } from './discord';
 import { keyv } from './storage';
 import { Persona } from './types';
 
+import { DEFAULT_PERSONA, channelId } from './constants';
+
+export let currentPersona = DEFAULT_PERSONA;
+
 export const setPersona = async (persona: Persona) => {
     await keyv.set('currentPersona', persona);
-    await client.user?.setUsername(persona.name);
+    currentPersona = persona;
+
+    try {
+        if (client.user?.username !== `${persona.name} [BOT]`) {
+            await sendMessage(
+                `Updating persona to ${persona.name}.\nDescription: ${persona.description}\nPrompt: ${persona.systemPrompt}`,
+                channelId
+            );
+            await client.user?.setUsername(`${persona.name} [BOT]`);
+        }
+    } catch (error: any) {
+        console.error('Could not set username', { error });
+        /* api.channels.createMessage(channelId, {
+            content: `Could not set name to ${persona.name} (${error.message})`,
+        }); */
+    }
 
     console.log('Successfully changed personas to', persona);
 };
+
+export const savePersona = async (persona: Persona) => {
+    const existing: Persona[] = JSON.parse((await keyv.get('personas')) ?? '[]');
+
+    const existingIndex = existing.findIndex(p => p.name === persona.name);
+
+    if (existingIndex > -1) existing[existingIndex] = persona;
+    else existing.push(persona);
+
+    await keyv.set('personas', JSON.stringify(existing));
+};
+
+export const getCurrentPersona = () => currentPersona;

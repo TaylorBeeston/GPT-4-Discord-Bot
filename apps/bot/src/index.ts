@@ -1,4 +1,10 @@
-import { Events, InteractionType } from 'discord.js';
+import {
+    ActionRowBuilder,
+    Events,
+    InteractionType,
+    StringSelectMenuBuilder,
+    StringSelectMenuOptionBuilder,
+} from 'discord.js';
 
 import { DEFAULT_PERSONA, channelId } from './constants';
 
@@ -7,9 +13,8 @@ import { client, api, getMessageHistory, sendMessage } from './discord';
 import { applicationId, guildId, discordToken } from './constants';
 import { commands } from './commands';
 import { keyv } from './storage';
-import { setPersona } from './persona';
-
-let currentPersona = DEFAULT_PERSONA;
+import { getCurrentPersona, savePersona, setPersona } from './persona';
+import { Persona } from './types';
 
 client.login(discordToken);
 
@@ -75,27 +80,70 @@ client.on(Events.InteractionCreate, async interaction => {
             const prompt = promptOption?.value;
 
             if (name && description && prompt) {
-                const persona = { name, description, systemPrompt: prompt };
+                const persona = { name, description, systemPrompt: prompt || '' } as Persona;
 
-                await keyv.set(name.toString(), persona);
+                await savePersona(persona);
 
-                await keyv.set('currentPersona', persona);
-
-                currentPersona = persona as any;
-
-                await sendMessage(
-                    `Updating persona to ${name}.\nDescription: ${description}\nPrompt: ${prompt}`,
-                    channelId
-                );
+                await setPersona(persona);
 
                 await interaction.reply('Updated persona!');
             }
         }
 
         if (interaction.commandName === 'get-persona') {
+            const currentPersona = getCurrentPersona();
             await interaction.reply(
                 `Name: ${currentPersona.name}\nDescription: ${currentPersona.description}\nPrompt: ${currentPersona.systemPrompt}`
             );
+        }
+
+        if (interaction.commandName === 'list-personas') {
+            const personas = (await keyv.get('personas')) ?? '[]';
+            console.log({ personas });
+            await interaction.reply(personas);
+        }
+
+        if (interaction.commandName === 'select-persona') {
+            const personas: Persona[] = JSON.parse((await keyv.get('personas')) ?? '[]');
+
+            const options = personas.map(persona => {
+                return new StringSelectMenuOptionBuilder()
+                    .setLabel(persona.name)
+                    .setDescription(persona.description ?? 'No description set')
+                    .setValue(JSON.stringify(persona));
+            });
+
+            const select = new StringSelectMenuBuilder()
+                .setCustomId('personas')
+                .setPlaceholder('Pick a persona to use')
+                .addOptions(options);
+
+            const row = new ActionRowBuilder().addComponents(select);
+
+            const response = await interaction.reply({
+                content: 'Select a persona',
+                components: [row],
+                ephemeral: true,
+            });
+
+            const selectionResponse = await response.awaitMessageComponent({
+                filter: i => i.user.id === interaction.user.id,
+                time: 60000,
+            });
+
+            if (selectionResponse.isStringSelectMenu()) {
+                const { values } = selectionResponse;
+                const value = values[0];
+
+                console.log({ values });
+
+                if (value) {
+                    await Promise.all([
+                        setPersona(JSON.parse(value)),
+                        interaction.editReply({ content: 'Updated persona!', components: [] }),
+                    ]);
+                }
+            }
         }
     }
 });

@@ -40,10 +40,12 @@ export const getMessageHistory = async (
     while (isReply) {
         message = await message.fetchReference();
 
+        const clientIsAuthor = message.author.id === client.user!.id;
+
         messages.unshift({
-            role: message.author.id === client.user!.id ? 'assistant' : 'user',
+            role: clientIsAuthor ? 'assistant' : 'user',
             content: cleanMessageContent(message.content),
-            name: message.author.username,
+            ...(clientIsAuthor ? {} : { name: message.author.username }),
         });
 
         isReply = Boolean(message.reference);
