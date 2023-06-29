@@ -23,6 +23,10 @@ export const cleanMessageContent = (content: string): string => {
     return content.replace(userMention(client.user!.id), '').trim();
 };
 
+export const cleanUsername = (username: string): string => {
+    return username.replace(/[^a-z0-9_]/gi, '').slice(0, 63);
+};
+
 export const getMessageHistory = async (
     _message: Message<boolean>
 ): Promise<ChatCompletionRequestMessage[]> => {
@@ -30,7 +34,7 @@ export const getMessageHistory = async (
         {
             role: 'user',
             content: cleanMessageContent(_message.content),
-            name: _message.author.username,
+            name: cleanUsername(_message.author.username),
         },
     ];
 
