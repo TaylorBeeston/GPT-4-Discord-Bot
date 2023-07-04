@@ -74,13 +74,14 @@ client.on(Events.ClientReady, async c => {
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.type === InteractionType.ApplicationCommand) {
         if (interaction.commandName === 'set-persona') {
-            const [nameOption, descriptionOption, promptOption] = interaction.options.data;
+            const [nameOption, descriptionOption, promptOption, avatarOption] = interaction.options.data;
             const name = nameOption?.value;
             const description = descriptionOption?.value;
             const prompt = promptOption?.value;
+            const avatar = avatarOption?.value;
 
             if (name && description && prompt) {
-                const persona = { name, description, systemPrompt: prompt || '' } as Persona;
+                const persona = { name, description, systemPrompt: prompt || '', avatar } as Persona;
 
                 await savePersona(persona);
 

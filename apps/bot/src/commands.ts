@@ -26,6 +26,12 @@ export const commands: RESTPutAPIApplicationCommandsJSONBody = [
                 description: 'Prompt for the persona',
                 required: true,
             },
+            {
+                name: 'avatar',
+                type: ApplicationCommandOptionType.Attachment,
+                description: 'Avatar for the persona',
+                required: false
+            }
         ],
     },
     {

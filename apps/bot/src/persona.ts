@@ -16,6 +16,9 @@ export const setPersona = async (persona: Persona) => {
                 `Updating persona to ${persona.name}.\nDescription: ${persona.description}\nPrompt: ${persona.systemPrompt}`,
                 channelId
             );
+
+            if (persona.avatar) await client.user?.setAvatar(persona.avatar);
+
             await client.user?.setUsername(`${persona.name} [BOT]`);
         }
     } catch (error: any) {
