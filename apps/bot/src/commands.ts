@@ -30,20 +30,12 @@ export const commands: RESTPutAPIApplicationCommandsJSONBody = [
                 name: 'avatar',
                 type: ApplicationCommandOptionType.Attachment,
                 description: 'Avatar for the persona',
-                required: false
-            }
+                required: false,
+            },
         ],
     },
-    {
-        name: 'get-persona',
-        description: "Get the Bot's persona",
-    },
-    {
-        name: 'list-personas',
-        description: 'List saved personas',
-    },
-    {
-        name: 'select-persona',
-        description: 'Select a persona',
-    },
+    { name: 'get-persona', description: "Get the Bot's persona" },
+    { name: 'list-personas', description: 'List saved personas' },
+    { name: 'select-persona', description: 'Select a persona' },
+    { name: 'update-persona', description: 'Update a persona' },
 ];

@@ -15,6 +15,7 @@ import { commands } from './commands';
 import { keyv } from './storage';
 import { getCurrentPersona, savePersona, setPersona } from './persona';
 import { Persona } from './types';
+import { getPersonaPicker, getUpdatePersonaModal } from './interactions';
 
 client.login(discordToken);
 
@@ -74,14 +75,20 @@ client.on(Events.ClientReady, async c => {
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.type === InteractionType.ApplicationCommand) {
         if (interaction.commandName === 'set-persona') {
-            const [nameOption, descriptionOption, promptOption, avatarOption] = interaction.options.data;
+            const [nameOption, descriptionOption, promptOption, avatarOption] =
+                interaction.options.data;
             const name = nameOption?.value;
             const description = descriptionOption?.value;
             const prompt = promptOption?.value;
             const avatar = avatarOption?.value;
 
             if (name && description && prompt) {
-                const persona = { name, description, systemPrompt: prompt || '', avatar } as Persona;
+                const persona = {
+                    name,
+                    description,
+                    systemPrompt: prompt || '',
+                    avatar,
+                } as Persona;
 
                 await savePersona(persona);
 
@@ -107,19 +114,7 @@ client.on(Events.InteractionCreate, async interaction => {
         if (interaction.commandName === 'select-persona') {
             const personas: Persona[] = JSON.parse((await keyv.get('personas')) ?? '[]');
 
-            const options = personas.map((persona, index) => {
-                return new StringSelectMenuOptionBuilder()
-                    .setLabel(persona.name)
-                    .setDescription(persona.description ?? 'No description set')
-                    .setValue(index.toString());
-            });
-
-            const select = new StringSelectMenuBuilder()
-                .setCustomId('personas')
-                .setPlaceholder('Pick a persona to use')
-                .addOptions(options);
-
-            const row = new ActionRowBuilder().addComponents(select);
+            const row = await getPersonaPicker('Pick a persona to use');
 
             const response = await interaction.reply({
                 content: 'Select a persona',
@@ -141,6 +136,59 @@ client.on(Events.InteractionCreate, async interaction => {
                 if (!Number.isNaN(value) && personas[value]) {
                     await Promise.all([
                         setPersona(personas[value]!),
+                        interaction.editReply({ content: 'Updated persona!', components: [] }),
+                    ]);
+                }
+            }
+        }
+
+        if (interaction.commandName === 'update-persona') {
+            const personas: Persona[] = JSON.parse((await keyv.get('personas')) ?? '[]');
+
+            const row = await getPersonaPicker('Select a persona to update');
+
+            const response = await interaction.reply({
+                content: 'Select a persona',
+                components: [row],
+                ephemeral: true,
+            });
+
+            const selectionResponse = await response.awaitMessageComponent({
+                filter: i => i.user.id === interaction.user.id,
+                time: 60000,
+            });
+
+            if (selectionResponse.isStringSelectMenu()) {
+                const { values } = selectionResponse;
+                const value = Number(values[0]);
+
+                console.log({ values });
+
+                if (!Number.isNaN(value) && personas[value]) {
+                    const persona = personas[value]!;
+
+                    const modal = await getUpdatePersonaModal(persona);
+
+                    await interaction.showModal(modal);
+
+                    const modalResponse = await interaction.awaitModalSubmit({
+                        filter: i => i.user.id === interaction.user.id,
+                        time: 60000,
+                    });
+
+                    if (!modalResponse.isFromMessage()) return;
+
+                    const name = modalResponse.fields.getTextInputValue('name');
+                    const description = modalResponse.fields.getTextInputValue('description');
+                    const prompt = modalResponse.fields.getTextInputValue('prompt');
+
+                    await Promise.all([
+                        savePersona({
+                            name,
+                            description,
+                            systemPrompt: prompt,
+                            avatar: persona.avatar,
+                        }),
                         interaction.editReply({ content: 'Updated persona!', components: [] }),
                     ]);
                 }
