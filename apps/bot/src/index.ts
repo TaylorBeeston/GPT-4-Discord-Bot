@@ -108,6 +108,11 @@ client.on(Events.InteractionCreate, async interaction => {
             const prompt = promptOption?.value;
             const avatar = avatarOption?.value;
 
+            const nameTest = interaction.options.get('name');
+            const avatarTest = interaction.options.get('avatar');
+
+            console.log({ name, description, prompt, avatar, nameTest, avatarTest });
+
             const persona = {
                 ...currentPersona,
                 ...(name ? { name } : {}),
@@ -116,9 +121,11 @@ client.on(Events.InteractionCreate, async interaction => {
                 ...(avatar ? { avatar } : {}),
             } as Persona;
 
-            await savePersona(persona);
+            console.log({ persona });
 
-            await setPersona(persona);
+            /* await savePersona(persona);
+
+            await setPersona(persona); */
 
             await interaction.reply('Updated persona!');
         }
