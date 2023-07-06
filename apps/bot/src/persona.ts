@@ -2,12 +2,12 @@ import { client, sendMessage } from './discord';
 import { keyv } from './storage';
 import { Persona } from './types';
 
-import { DEFAULT_PERSONA, channelId } from './constants';
+import { DEFAULT_PERSONA, channelId, dbKey } from './constants';
 
 export let currentPersona = DEFAULT_PERSONA;
 
 export const setPersona = async (persona: Persona) => {
-    await keyv.set('currentPersona', persona);
+    await keyv.set(dbKey, persona);
     currentPersona = persona;
 
     try {

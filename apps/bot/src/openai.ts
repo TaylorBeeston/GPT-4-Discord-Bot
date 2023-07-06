@@ -1,12 +1,12 @@
 import { OpenAIApi, Configuration, ChatCompletionRequestMessage } from 'openai';
 
 import { openAiToken } from './constants';
-import { keyv } from './storage';
+import { getCurrentPersona } from './persona';
 
 export const addSystemPrompt = async (
     messages: ChatCompletionRequestMessage[]
 ): Promise<ChatCompletionRequestMessage[]> => {
-    const currentPersona = await keyv.get('currentPersona');
+    const currentPersona = getCurrentPersona();
     const { systemPrompt } = currentPersona ?? {};
 
     if (!systemPrompt) return messages;

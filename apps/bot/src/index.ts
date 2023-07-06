@@ -6,7 +6,7 @@ import {
     StringSelectMenuOptionBuilder,
 } from 'discord.js';
 
-import { DEFAULT_PERSONA, channelId } from './constants';
+import { DEFAULT_PERSONA, channelId, dbKey } from './constants';
 
 import { addSystemPrompt, callGPT4 } from './openai';
 import { client, api, getMessageHistory, sendMessage } from './discord';
@@ -62,7 +62,7 @@ client.on(Events.ClientReady, async c => {
 
         console.log('Successfully reloaded application (/) commands.');
 
-        keyv.get('currentPersona').then(async persona => {
+        keyv.get(dbKey).then(async persona => {
             console.log({ persona });
 
             await setPersona(persona || DEFAULT_PERSONA);

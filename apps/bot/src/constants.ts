@@ -16,6 +16,7 @@ export const guildId = process.env.GUILD_ID!;
 export const channelId = process.env.CHANNEL_ID!;
 export const openAiToken = process.env.OPENAI_API_TOKEN!;
 export const keyVUrl = process.env.KEYV_URL!;
+export const dbKey = process.env.DB_KEY || 'currentPersona';
 
 if (!discordToken) throw new Error('Discord Token not set!');
 if (!discordKey) throw new Error('Discord Application Key not set!');
