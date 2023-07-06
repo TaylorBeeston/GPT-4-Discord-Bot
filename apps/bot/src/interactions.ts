@@ -1,6 +1,5 @@
 import {
     ActionRowBuilder,
-    ModalBuilder,
     StringSelectMenuBuilder,
     StringSelectMenuOptionBuilder,
     TextInputBuilder,
@@ -51,33 +50,4 @@ export const getPersonaPicker = async (
         .addOptions(options);
 
     return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select);
-};
-
-export const getUpdatePersonaModal = async (persona: Persona): Promise<ModalBuilder> => {
-    const modal = new ModalBuilder()
-        .setCustomId('update-persona')
-        .setTitle(`Update ${persona.name}`);
-
-    const nameInput = getTextInput({
-        id: 'name',
-        label: 'Name',
-        value: persona.name,
-        required: true,
-    });
-    const descriptionInput = getTextInput({
-        id: 'description',
-        label: 'Description',
-        value: persona.description,
-        required: true,
-    });
-    const promptInput = getTextInput({
-        id: 'prompt',
-        label: 'Prompt',
-        value: persona.systemPrompt,
-        required: true,
-    });
-
-    modal.addComponents(nameInput, descriptionInput, promptInput);
-
-    return modal;
 };

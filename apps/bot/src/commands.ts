@@ -67,5 +67,5 @@ export const commands: RESTPutAPIApplicationCommandsJSONBody = [
     { name: 'get-persona', description: "Get the Bot's persona" },
     { name: 'list-personas', description: 'List saved personas' },
     { name: 'select-persona', description: 'Select a persona' },
-    // { name: 'update-persona', description: 'Update a persona' },
+    { name: 'delete-persona', description: 'Delete a persona' },
 ];

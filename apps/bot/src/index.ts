@@ -13,7 +13,7 @@ import { client, api, getMessageHistory, sendMessage } from './discord';
 import { applicationId, guildId, discordToken } from './constants';
 import { commands } from './commands';
 import { keyv } from './storage';
-import { getCurrentPersona, savePersona, setPersona } from './persona';
+import { deletePersona, getCurrentPersona, savePersona, setPersona } from './persona';
 import { Persona } from './types';
 import { getPersonaPicker, getUpdatePersonaModal } from './interactions';
 
@@ -175,10 +175,10 @@ client.on(Events.InteractionCreate, async interaction => {
             }
         }
 
-        if (interaction.commandName === 'update-persona') {
+        if (interaction.commandName === 'delete-persona') {
             const personas: Persona[] = JSON.parse((await keyv.get('personas')) ?? '[]');
 
-            const row = await getPersonaPicker('Select a persona to update');
+            const row = await getPersonaPicker('Pick a persona to use');
 
             const response = await interaction.reply({
                 content: 'Select a persona',
@@ -198,31 +198,9 @@ client.on(Events.InteractionCreate, async interaction => {
                 console.log({ values });
 
                 if (!Number.isNaN(value) && personas[value]) {
-                    const persona = personas[value]!;
-
-                    const modal = await getUpdatePersonaModal(persona);
-
-                    await interaction.showModal(modal);
-
-                    const modalResponse = await interaction.awaitModalSubmit({
-                        filter: i => i.user.id === interaction.user.id,
-                        time: 60000,
-                    });
-
-                    if (!modalResponse.isFromMessage()) return;
-
-                    const name = modalResponse.fields.getTextInputValue('name');
-                    const description = modalResponse.fields.getTextInputValue('description');
-                    const prompt = modalResponse.fields.getTextInputValue('prompt');
-
                     await Promise.all([
-                        savePersona({
-                            name,
-                            description,
-                            systemPrompt: prompt,
-                            avatar: persona.avatar,
-                        }),
-                        interaction.editReply({ content: 'Updated persona!', components: [] }),
+                        deletePersona(personas[value]!.name),
+                        interaction.editReply({ content: 'Deleted persona!', components: [] }),
                     ]);
                 }
             }

@@ -1,4 +1,4 @@
-import { api, client, sendMessage } from './discord';
+import { client, sendMessage } from './discord';
 import { keyv } from './storage';
 import { Persona } from './types';
 
@@ -43,6 +43,14 @@ export const savePersona = async (persona: Persona) => {
     else existing.push(persona);
 
     await keyv.set('personas', JSON.stringify(existing));
+};
+
+export const deletePersona = async (name: string) => {
+    const existing: Persona[] = JSON.parse((await keyv.get('personas')) ?? '[]');
+
+    const filtered = existing.filter(persona => persona.name !== name);
+
+    await keyv.set('personas', JSON.stringify(filtered));
 };
 
 export const getCurrentPersona = () => currentPersona;
