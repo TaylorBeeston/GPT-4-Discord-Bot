@@ -101,17 +101,17 @@ client.on(Events.InteractionCreate, async interaction => {
         if (interaction.commandName === 'update-current-persona') {
             const currentPersona = getCurrentPersona();
 
-            const [nameOption, descriptionOption, promptOption, avatarOption] =
-                interaction.options.data;
+            const nameOption = interaction.options.get('name');
+            const descriptionOption = interaction.options.get('description');
+            const promptOption = interaction.options.get('prompt');
+            const avatarOption = interaction.options.get('avatar');
+
             const name = nameOption?.value;
             const description = descriptionOption?.value;
             const prompt = promptOption?.value;
-            const avatar = avatarOption?.value;
+            const avatar = avatarOption?.attachment?.url;
 
-            const nameTest = interaction.options.get('name');
-            const avatarTest = interaction.options.get('avatar');
-
-            console.log({ name, description, prompt, avatar, nameTest, avatarTest });
+            console.log({ name, description, prompt, avatar });
 
             const persona = {
                 ...currentPersona,
