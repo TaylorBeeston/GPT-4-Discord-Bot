@@ -98,6 +98,31 @@ client.on(Events.InteractionCreate, async interaction => {
             }
         }
 
+        if (interaction.commandName === 'update-current-persona') {
+            const currentPersona = getCurrentPersona();
+
+            const [nameOption, descriptionOption, promptOption, avatarOption] =
+                interaction.options.data;
+            const name = nameOption?.value;
+            const description = descriptionOption?.value;
+            const prompt = promptOption?.value;
+            const avatar = avatarOption?.value;
+
+            const persona = {
+                ...currentPersona,
+                ...(name ? { name } : {}),
+                ...(description ? { description } : {}),
+                ...(prompt ? { systemPrompt: prompt } : {}),
+                ...(avatar ? { avatar } : {}),
+            } as Persona;
+
+            await savePersona(persona);
+
+            await setPersona(persona);
+
+            await interaction.reply('Updated persona!');
+        }
+
         if (interaction.commandName === 'get-persona') {
             const currentPersona = getCurrentPersona();
             await interaction.reply(
