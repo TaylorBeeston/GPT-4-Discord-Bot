@@ -17,18 +17,21 @@ export const setPersona = async (persona: Persona) => {
                 channelId
             );
 
-            if (persona.avatar) await client.user?.setAvatar(persona.avatar);
-
             await client.user?.setUsername(`${persona.name} [BOT]`);
+
+            console.log('Successfully changed personas to', persona);
         }
     } catch (error: any) {
         console.error('Could not set username', { error });
-        /* api.channels.createMessage(channelId, {
-            content: `Could not set name to ${persona.name} (${error.message})`,
-        }); */
     }
 
-    console.log('Successfully changed personas to', persona);
+    try {
+        if (persona.avatar && persona.avatar !== client.user?.avatarURL()) {
+            await client.user?.setAvatar(persona.avatar);
+        }
+    } catch (error: any) {
+        console.error('Could not set avatar', { error });
+    }
 };
 
 export const savePersona = async (persona: Persona) => {
