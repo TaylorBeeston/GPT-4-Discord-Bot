@@ -75,12 +75,15 @@ client.on(Events.ClientReady, async c => {
 client.on(Events.InteractionCreate, async interaction => {
     if (interaction.type === InteractionType.ApplicationCommand) {
         if (interaction.commandName === 'set-persona') {
-            const [nameOption, descriptionOption, promptOption, avatarOption] =
-                interaction.options.data;
+            const nameOption = interaction.options.get('name');
+            const descriptionOption = interaction.options.get('description');
+            const promptOption = interaction.options.get('prompt');
+            const avatarOption = interaction.options.get('avatar');
+
             const name = nameOption?.value;
             const description = descriptionOption?.value;
             const prompt = promptOption?.value;
-            const avatar = avatarOption?.value;
+            const avatar = avatarOption?.attachment?.url;
 
             if (name && description && prompt) {
                 const persona = {
@@ -111,8 +114,6 @@ client.on(Events.InteractionCreate, async interaction => {
             const prompt = promptOption?.value;
             const avatar = avatarOption?.attachment?.url;
 
-            console.log({ name, description, prompt, avatar });
-
             const persona = {
                 ...currentPersona,
                 ...(name ? { name } : {}),
@@ -123,9 +124,9 @@ client.on(Events.InteractionCreate, async interaction => {
 
             console.log({ persona });
 
-            /* await savePersona(persona);
+            await savePersona(persona);
 
-            await setPersona(persona); */
+            await setPersona(persona);
 
             await interaction.reply('Updated persona!');
         }
