@@ -8,7 +8,7 @@ import {
 
 import { DEFAULT_PERSONA, channelId, dbKey } from './constants';
 
-import { addSystemPrompt, callGPT4 } from './openai';
+import { addSystemPrompt, callGPT4, generateImage } from './openai';
 import { client, api, getMessageHistory, sendMessage } from './discord';
 import { applicationId, guildId, discordToken } from './constants';
 import { commands } from './commands';
@@ -204,6 +204,23 @@ client.on(Events.InteractionCreate, async interaction => {
                     ]);
                 }
             }
+        }
+
+        if (interaction.commandName === 'generate-image') {
+            const promptOption = interaction.options.get('prompt');
+            const hdOption = interaction.options.get('hd');
+
+            const prompt = promptOption?.value;
+            const hd = hdOption?.value;
+
+            await interaction.reply('Generating...');
+
+            const image = await generateImage(prompt, hd);
+
+            const messageObject = await api.channels.createMessage(channelId, {
+                content: '',
+                files: [{ data: image }],
+            });
         }
     }
 });

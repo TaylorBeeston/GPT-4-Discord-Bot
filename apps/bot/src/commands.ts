@@ -68,4 +68,23 @@ export const commands: RESTPutAPIApplicationCommandsJSONBody = [
     { name: 'list-personas', description: 'List saved personas' },
     { name: 'select-persona', description: 'Select a persona' },
     { name: 'delete-persona', description: 'Delete a persona' },
+    {
+        name: 'generate-image',
+        description: 'Generate an image with DallE 3',
+
+        options: [
+            {
+                name: 'prompt',
+                type: ApplicationCommandOptionType.String,
+                description: 'Prompt for the persona',
+                required: true,
+            },
+            {
+                name: 'hd',
+                type: ApplicationCommandOptionType.Boolean,
+                description: 'Create HD Image? (More expensive)',
+                required: false,
+            },
+        ],
+    },
 ];
