@@ -219,7 +219,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
             const messageObject = await api.channels.createMessage(channelId, {
                 content: '',
-                files: [{ data: image }],
+                files: [{ name: prompt + '.png', data: image }],
             });
         }
     }
