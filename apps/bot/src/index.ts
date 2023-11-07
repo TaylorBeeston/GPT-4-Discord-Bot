@@ -1,10 +1,4 @@
-import {
-    ActionRowBuilder,
-    Events,
-    InteractionType,
-    StringSelectMenuBuilder,
-    StringSelectMenuOptionBuilder,
-} from 'discord.js';
+import { AttachmentBuilder, Events, InteractionType } from 'discord.js';
 
 import { DEFAULT_PERSONA, channelId, dbKey } from './constants';
 
@@ -217,9 +211,10 @@ client.on(Events.InteractionCreate, async interaction => {
 
             const image = await generateImage(prompt, hd);
 
-            const messageObject = await api.channels.createMessage(channelId, {
-                content: '',
-                files: [{ name: prompt + '.png', data: image }],
+            interaction.channel?.send({
+                files: [
+                    new AttachmentBuilder(Buffer.from(image, 'base64'), { name: prompt + '.png' }),
+                ],
             });
         }
     }
