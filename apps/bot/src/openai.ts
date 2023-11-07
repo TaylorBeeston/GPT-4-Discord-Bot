@@ -19,7 +19,10 @@ export const openAi = new OpenAI({ apiKey: openAiToken });
 export const callGPT4 = async (
     messages: OpenAI.Chat.ChatCompletionMessageParam[]
 ): Promise<string> => {
-    const response = await openAi.chat.completions.create({ model: 'gpt-4-0613', messages });
+    const response = await openAi.chat.completions.create({
+        model: 'gpt-4-1106-preview',
+        messages,
+    });
 
     return response.choices[0]?.message?.content ?? '';
 };
