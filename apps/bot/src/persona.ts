@@ -11,13 +11,13 @@ export const setPersona = async (persona: Persona) => {
     currentPersona = persona;
 
     try {
-        if (client.user?.username !== `${persona.name} [BOT]`) {
+        if (client.user?.username !== `${persona.name} (Claude) [BOT]`) {
             await sendMessage(
                 `Updating persona to ${persona.name}.\nDescription: ${persona.description}\nPrompt: ${persona.systemPrompt}`,
                 channelId
             );
 
-            await client.user?.setUsername(`${persona.name} [BOT]`);
+            await client.user?.setUsername(`${persona.name} (Claude) [BOT]`);
 
             console.log('Successfully changed personas to', persona);
         }
