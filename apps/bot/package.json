@@ -24,6 +24,7 @@
         "shx": "^0.3.4"
     },
     "dependencies": {
+        "@anthropic-ai/sdk": "^0.16.1",
         "@discordjs/core": "^0.6.0",
         "@discordjs/rest": "^1.7.1",
         "@discordjs/ws": "^0.8.3",

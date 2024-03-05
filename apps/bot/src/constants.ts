@@ -14,7 +14,7 @@ export const discordKey = process.env.DISCORD_APPLICATION_KEY!;
 export const applicationId = process.env.APPLICATION_ID!;
 export const guildId = process.env.GUILD_ID!;
 export const channelId = process.env.CHANNEL_ID!;
-export const openAiToken = process.env.OPENAI_API_TOKEN!;
+export const anthropicToken = process.env.ANTHROPIC_API_TOKEN!;
 export const keyVUrl = process.env.KEYV_URL!;
 export const dbKey = process.env.DB_KEY || 'currentPersona';
 
@@ -23,5 +23,5 @@ if (!discordKey) throw new Error('Discord Application Key not set!');
 if (!applicationId) throw new Error('Application ID not set!');
 if (!guildId) throw new Error('Guild ID not set!');
 if (!channelId) throw new Error('Channel ID not set!');
-if (!openAiToken) throw new Error('OpenAI Token not set!');
+if (!anthropicToken) throw new Error('Anthropic Token not set!');
 if (!keyVUrl) throw new Error('KeyV URL not set!');

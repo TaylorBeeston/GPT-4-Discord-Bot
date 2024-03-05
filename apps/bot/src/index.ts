@@ -1,15 +1,15 @@
 import { AttachmentBuilder, Events, InteractionType } from 'discord.js';
 
-import { DEFAULT_PERSONA, channelId, dbKey } from './constants';
+import { DEFAULT_PERSONA, dbKey } from './constants';
 
-import { addSystemPrompt, callGPT4, generateImage } from './openai';
+import { addSystemPrompt, callClaude, generateImage } from './openai';
 import { client, api, getMessageHistory, sendMessage } from './discord';
 import { applicationId, guildId, discordToken } from './constants';
 import { commands } from './commands';
 import { keyv } from './storage';
 import { deletePersona, getCurrentPersona, savePersona, setPersona } from './persona';
 import { Persona } from './types';
-import { getPersonaPicker, getUpdatePersonaModal } from './interactions';
+import { getPersonaPicker } from './interactions';
 
 client.login(discordToken);
 
@@ -24,7 +24,7 @@ client.on(Events.MessageCreate, async message => {
 
     console.log({ messages });
 
-    const gpt4Response = await callGPT4(messages);
+    const gpt4Response = await callClaude(messages);
 
     await api.channels.deleteMessage(message.channelId, placeholderId);
 
@@ -201,6 +201,8 @@ client.on(Events.InteractionCreate, async interaction => {
         }
 
         if (interaction.commandName === 'generate-image') {
+            interaction.reply({ content: "This doesn't work right now =(" });
+            return;
             const promptOption = interaction.options.get('prompt');
             const hdOption = interaction.options.get('hd');
 

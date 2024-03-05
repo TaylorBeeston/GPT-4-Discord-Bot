@@ -1,11 +1,11 @@
-import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 
-import { openAiToken } from './constants';
+import { anthropicToken } from './constants';
 import { getCurrentPersona } from './persona';
 
 export const addSystemPrompt = async (
-    messages: OpenAI.Chat.ChatCompletionMessageParam[]
-): Promise<OpenAI.Chat.ChatCompletionMessageParam[]> => {
+    messages: Anthropic.Messages.MessageParam[]
+): Promise<Anthropic.Messages.MessageParam[]> => {
     const currentPersona = getCurrentPersona();
     const { systemPrompt } = currentPersona ?? {};
 
@@ -14,21 +14,20 @@ export const addSystemPrompt = async (
     return [{ role: 'system', content: currentPersona.systemPrompt }, ...messages];
 };
 
-export const openAi = new OpenAI({ apiKey: openAiToken });
+export const anthropic = new Anthropic({ apiKey: anthropicToken });
 
-export const callGPT4 = async (
-    messages: OpenAI.Chat.ChatCompletionMessageParam[]
-): Promise<string> => {
-    const response = await openAi.chat.completions.create({
-        model: 'gpt-4-1106-preview',
+export const callClaude = async (messages: Anthropic.Messages.MessageParam[]): Promise<string> => {
+    const response = await anthropic.messages.create({
+        max_tokens: 1024,
+        model: 'claude-3-opus-20240229',
         messages,
     });
 
-    return response.choices[0]?.message?.content ?? '';
+    return response.content.map(response => response.text).join(' ');
 };
 
 export const generateImage = async (prompt: string, hd = false): Promise<string> => {
-    const response = await openAi.images.generate({
+    const response = await anthropic.images.generate({
         model: 'dall-e-3',
         prompt,
         n: 1,

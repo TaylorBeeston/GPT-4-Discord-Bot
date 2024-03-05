@@ -12,7 +12,7 @@ import {
 } from '@discordjs/core';
 import { WebSocketManager } from '@discordjs/ws';
 
-import { openAi } from './openai';
+import { anthropic } from './openai';
 import { discordToken, discordKey, channelId as _channelId, openAiToken } from './constants';
 
 const rest = new REST({ version: '10' }).setToken(discordToken);
@@ -30,7 +30,7 @@ const client = new Client({ rest, gateway });
 const api = new API(rest);
 
 async function callGPT4(message: string): Promise<string> {
-    const response = await openAi.createChatCompletion({
+    const response = await anthropic.createChatCompletion({
         model: 'gpt-4',
         messages: [{ role: 'user', content: message }],
     });
