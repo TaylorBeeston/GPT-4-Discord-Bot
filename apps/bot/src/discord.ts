@@ -1,7 +1,7 @@
 import { REST } from '@discordjs/rest';
 import { Client, GatewayIntentBits, userMention, Partials, Message } from 'discord.js';
 import { API } from '@discordjs/core';
-import { ChatCompletionRequestMessage } from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 
 import { discordToken } from './constants';
 
@@ -29,12 +29,11 @@ export const cleanUsername = (username: string): string => {
 
 export const getMessageHistory = async (
     _message: Message<boolean>
-): Promise<ChatCompletionRequestMessage[]> => {
-    const messages: ChatCompletionRequestMessage[] = [
+): Promise<Anthropic.Messages.MessageParam[]> => {
+    const messages: Anthropic.Messages.MessageParam[] = [
         {
             role: 'user',
             content: cleanMessageContent(_message.content),
-            name: cleanUsername(_message.author.username),
         },
     ];
 
@@ -49,7 +48,6 @@ export const getMessageHistory = async (
         messages.unshift({
             role: clientIsAuthor ? 'assistant' : 'user',
             content: cleanMessageContent(message.content),
-            ...(clientIsAuthor ? {} : { name: message.author.username }),
         });
 
         isReply = Boolean(message.reference);

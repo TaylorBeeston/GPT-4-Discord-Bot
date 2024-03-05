@@ -11,7 +11,7 @@ export const addSystemPrompt = async (
 
     if (!systemPrompt) return messages;
 
-    return [{ role: 'system', content: currentPersona.systemPrompt }, ...messages];
+    return [{ role: 'assistant', content: currentPersona.systemPrompt }, ...messages];
 };
 
 export const anthropic = new Anthropic({ apiKey: anthropicToken });
