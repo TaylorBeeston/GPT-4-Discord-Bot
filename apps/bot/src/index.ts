@@ -20,7 +20,7 @@ client.on(Events.MessageCreate, async message => {
 
     const placeholderId = await sendMessage('Generating response...', message.channelId, id);
 
-    const messages = await addSystemPrompt(await getMessageHistory(message));
+    const messages = await getMessageHistory(message);
 
     console.log({ messages });
 

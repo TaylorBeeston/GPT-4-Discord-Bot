@@ -17,10 +17,13 @@ export const addSystemPrompt = async (
 export const anthropic = new Anthropic({ apiKey: anthropicToken });
 
 export const callClaude = async (messages: Anthropic.Messages.MessageParam[]): Promise<string> => {
+    const currentPersona = getCurrentPersona();
+    const { systemPrompt } = currentPersona ?? {};
     const response = await anthropic.messages.create({
         max_tokens: 1024,
         model: 'claude-3-opus-20240229',
         messages,
+        ...(systemPrompt ? { system: systemPrompt } : {}),
     });
 
     return response.content.map(response => response.text).join(' ');
